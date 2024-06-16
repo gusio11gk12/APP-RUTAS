@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rutas Gus</title>
+    <link rel="stylesheet" href="../static/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #072e0a; /* Fondo más oscuro */
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1800px;
+            padding: 20px;
+            background-color: #021d0d; /* Color de fondo más oscuro */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            position: relative;
+            color: #fff;
+            overflow-y: auto; /* Agrega barra de desplazamiento vertical cuando sea necesario */
+            max-height: 180vh; /* Limita la altura máxima del contenedor */
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #11a72a; /* Color amarillo */
+        }
+
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #11a72a; /* Color amarillo */
+        }
+
+        select {
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #11a72a; /* Color amarillo para el borde */
+            border-radius: 12px;
+            background-color: #021722; /* Color de fondo más oscuro */
+            color: #fff; /* Color de texto blanco */
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #11a72a; /* Color amarillo */
+            color: #111410; /* Color de texto más oscuro */
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #0b7a11; /* Cambio de color al pasar el ratón */
+        }
+
+        #rutaResultado {
+            margin-top: 10px;
+            text-align: left;
+            color: #fff; /* Color de texto blanco */
+            background-color: #0b2811; /* Fondo más oscuro */
+            padding: 10px;
+            border-radius: 5px;
+            overflow-y: auto; /* Agrega barra de desplazamiento vertical cuando sea necesario */
+            max-height: 200px; /* Limita la altura máxima del contenedor */
+        }
+
+        .map-container {
+            position: relative;
+            height: 500px; /* Ajusta esta altura según tus necesidades */
+            margin-top: 20px;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rutas Gus</h1>
+        <form id="routeForm">
+            <label for="start">Ciudad Inicio:</label>
+            <select id="start" name="start">
+                {% for ciudad in ciudades %}
+                    <option value="{{ ciudad }}">{{ ciudad }}</option>
+                {% endfor %}
+            </select>
+            <label for="end">Ciudad Destino:</label>
+            <select id="end" name="end">
+                {% for ciudad in ciudades %}
+                    <option value="{{ ciudad }}">{{ ciudad }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Calcular Ruta</button>
+        </form>
+        <div id="rutaResultado"></div>
+        <div class="button-container">
+            <button id="clearRouteButton">Limpiar Ruta</button>
+        </div>
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDcw26spqgM8EgBQGc-7ZCPaQx9QEuiNEI&callback=initMap" async defer></script>
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {lat: 19.432608, lng: -99.133209}, // Punto central del mapa en la Ciudad de México
+                zoom: 5,
+                styles: [
+                    {
+                        "elementType": "geometry", // Geometría general del mapa
+                        "stylers": [
+                            {
+                                "color": "#333333"
+                            }
+                        ]
+                    },
+                    {
+                        "elementType": "labels.text.fill", // Textos de las etiquetas en el mapa, como los nombres de ciudades y calles
+                        "stylers": [
+                            {
+                                "color": "#6bfb64"
+                            }
+                        ]
+                    },
+                    {
+                        "elementType": "labels.text.stroke", // Se aplica un borde a los textos
+                        "stylers": [
+                            {
+                                "color": "#333333"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "administrative", // Este estilo se aplica a los elementos administrativos como son las fronteras...
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#6bfb64"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "administrative.country", // Límites de países
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#6bfb64"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "administrative.land_parcel", // A las parcelas
+                        "elementType": "labels",
+                        "stylers": [
+                            {
+                                "visibility": "off"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "administrative.neighborhood", // A los vecindarios
+                        "elementType": "labels",
+                        "stylers": [
+                            {
+                                "visibility": "off"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "poi", // Puntos de interés
+                        "elementType": "labels.text",
+                        "stylers": [
+                            {
+                                "visibility": "on"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "poi.park", // Parques
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#0b2811"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "road", // Íconos de las carreteras
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#0b2811"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "road",
+                        "elementType": "labels.icon",
+                        "stylers": [
+                            {
+                                "visibility": "off"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "road.arterial",
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#0b2811"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "road.highway", // Autopistas
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#0b2811"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "road.local", // Locales
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#0b2811"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "transit", // Transporte público
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#0b2811"
+                            }
+                        ]
+                    },
+                    {
+                        "featureType": "water", // Estilo al agua
+                        "elementType": "geometry",
+                        "stylers": [
+                            {
+                                "color": "#021d0d"
+                            }
+                        ]
+                    }
+                ]
+            });
+
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(map);
+        }
+
+// evento de escucha al formulario
+document.getElementById('routeForm').addEventListener('submit', function (e) {
+    
+    e.preventDefault();// previene que recargue la página
+
+    // aquí se btienen las ciudades de inicio y fin seleccionadas por el usuario
+    const start = document.getElementById('start').value;
+    const end = document.getElementById('end').value;
+
+    // solicitud POST al servidor con las ciudades de inicio y fin
+    fetch('/get_routes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({start: start, end: end}),
+    })
+    .then(response => response.json())  // Se convierte la respuesta del servidor a un objeto JSON
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        // obtiene los datos de la ruta más corta y las coordenadas de la ruta
+        const route = data.mejor_ruta;
+        const routeCoordinates = data.coordenadas_ruta;
+
+        // se crean los waypoints para la ruta a partir de las coordenadas de la ruta
+        const waypoints = routeCoordinates.map(coord => ({
+            location: new google.maps.LatLng(coord[0], coord[1]),
+            stopover: true
+        }));
+        const origin = waypoints.shift().location;
+        const destination = waypoints.pop().location;
+
+        // ervicio de direcciones de google maps para calcular la ruta que sigue el recorrido en la carretera
+        directionsService.route({
+            origin: origin,
+            destination: destination,
+            waypoints: waypoints,
+            travelMode: google.maps.TravelMode.DRIVING,
+        }, (response, status) => {
+            
+            if (status === 'OK') {// Si la solicitud fue exitosa se muestra la ruta en el mapa
+                directionsRenderer.setDirections(response);
+
+                // Calcula la distancia total de la ruta sumando las distancias de cada segmento de la ruta (leg)
+                let distance = 0;
+                let time = 0;  // tiempo en segundos
+                const legs = response.routes[0].legs;
+                for (let i = 0; i < legs.length; i++) {
+                    distance += legs[i].distance.value;
+                    time += legs[i].duration.value;  // Suma la duración de cada leg
+                }
+                distance = distance / 1000;  // kilómetros
+                time = time / 60 / 60;  //  horas
+
+                // distancia total en millas
+                const distanceMiles = distance * 0.621371;
+
+                // las horas y minutos
+                const hours = Math.floor(time);
+                const minutes = Math.round((time - hours) * 60);
+
+                //  tabla con las ciudades a lo largo de la ruta óptima
+                let tablaRuta = "<div class='table-container'><table>";
+                route.forEach((place, index) => {
+                    tablaRuta += `<tr><td data-label="Lugar">${index + 1}: ${place}</td></tr>`;
+                });
+                tablaRuta += "</table></div>";
+
+                // tabla para mostrar la información de la ruta, la distancia y el tiempo
+                let tablaInfo = `<div class='table-container'><table><tr><td data-label="Ruta óptima">${tablaRuta}</td></tr><tr><td data-label="Distancia total">${distance.toFixed(2)} km (${distanceMiles.toFixed(2)} mi)</td></tr><tr><td data-label="Tiempo total">${hours} horas y ${minutes} minutos</td></tr></table></div>`;
+
+                // tabla en el elemento
+                document.getElementById('rutaResultado').innerHTML = tablaInfo;
+            } else {
+                alert('La solicitud de direcciones falló debido a: ' + status);
+            }
+        });
+    })
+    // registra algún error en la consola
+    .catch(error => console.error('Error:', error));
+});
+
+
+
+        document.getElementById('clearRouteButton').addEventListener('click', function () {
+            directionsRenderer.setDirections({routes: []});
+            document.getElementById('rutaResultado').innerHTML = '';
+
+            // para restablecer los valores de las listas desplegables
+            document.getElementById('start').selectedIndex = 0;
+            document.getElementById('end').selectedIndex = 0;
+        });
+    </script>
+</body>
+</html>
